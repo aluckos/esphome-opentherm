@@ -25,7 +25,7 @@ void OpenThermComponent::setup() {
   this->write_pin_->setup();
 
   this->write_pin_->digital_write(true);
-  delay(25);
+  delay(50);
   this->status_ = OpenThermStatus::READY;
 
   this->start_millis_ = millis();
