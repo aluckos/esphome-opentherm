@@ -1,3 +1,52 @@
+def define_message_handler(
+    component_type: str, keys: list[str], schemas: dict[str, TSchema]
+) -> None:
+    messages: dict[str, list[tuple[str, str]]] = {}
+    for key in keys:
+        msg = schemas[key].message
+        if msg not in messages:
+            messages[msg] = []
+        messages[msg].append((key, schemas[key].message_data))
+
+    # POPRAWKA: Rozróżnienie nazwy makra jeśli obsługujemy specyficzny typ komponentu z przyrostkiem typu
+    macro_name = f"OPENTHERM_{component_type.upper()}_MESSAGE_HANDLERS"
+    
+    cg.add_define(
+        f"{macro_name}(MESSAGE, ENTITY, entity_sep, postscript, msg_sep)",
+        cg.RawExpression(
+            " msg_sep ".join(
+                [
+                    f"MESSAGE({msg}) "
+                    + " entity_sep ".join(
+                        [
+                            f"ENTITY({key}_{component_type.lower()}, {msg_data})"
+                            for key, msg_data in keys
+                        ]
+                    )
+                    + " postscript"
+                    for msg, keys in messages.items()
+                ]
+            )
+        ),
+    )
+
+
+def define_readers(component_type: str, keys: list[str]) -> None:
+    for key in keys:
+        # POPRAWKA: Dodanie typu komponentu do nazwy makra, aby uniknąć redefinicji
+        cg.add_define(
+            f"OPENTHERM_READ_{component_type.upper()}_{key}",
+            cg.RawExpression(f"this->{key}_{component_type.lower()}->state"),
+        )
+
+
+def define_setting_readers(component_type: str, keys: list[str]) -> None:
+    for key in keys:
+        # POPRAWKA: Zmiana na dedykowane makro odczytu dla sekcji ustawień (SETTINGS)
+        cg.add_define(
+            f"OPENTHERM_READ_SETTING_{key}",
+            cg.RawExpression(f"this->{key}_{component_type.lower()}"),
+        )
 from collections.abc import Awaitable, Callable
 from typing import Any
 
