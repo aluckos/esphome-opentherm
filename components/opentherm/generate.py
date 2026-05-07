@@ -1,3 +1,35 @@
+def define_message_handler(component_type: str, keys: list[str], schemas) -> None:
+    messages: dict[str, list[tuple[str, str]]] = {}
+    for key in keys:
+        msg = schemas[key].message
+        if msg not in messages:
+            messages[msg] = []
+        messages[msg].append((key, schemas[key].message_data))
+
+    # POPRAWKA: Sprawdzenie, czy to zwykłe sensory czy ustawienia (np. Brinka)
+    # Jeśli klucze pasują do schematu ustawień, zmień nazwę makra na unikalną
+    is_setting = any(k.endswith('_setting') or k in messages for k in keys) 
+    type_name = "SETTING" if is_setting else component_type.upper()
+    macro_name = f"OPENTHERM_{type_name}_MESSAGE_HANDLERS"
+    
+    cg.add_define(
+        f"{macro_name}(MESSAGE, ENTITY, entity_sep, postscript, msg_sep)",
+        cg.RawExpression(
+            " msg_sep ".join(
+                [
+                    f"MESSAGE({msg}) "
+                    + " entity_sep ".join(
+                        [
+                            f"ENTITY({key}_{component_type.lower()}, {msg_data})"
+                            for key, msg_data in keys
+                        ]
+                    )
+                    + " postscript"
+                    for msg, keys in messages.items()
+                ]
+            )
+        ),
+    )
 def define_message_handler(
     component_type: str, keys: list[str], schemas
 ) -> None:
