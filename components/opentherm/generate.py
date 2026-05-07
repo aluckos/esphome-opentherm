@@ -1,6 +1,7 @@
 def define_message_handler(
-    component_type: str, keys: list[str], schemas: dict[str, TSchema]
+    component_type: str, keys: list[str], schemas
 ) -> None:
+    # Usunięto ": dict[str, TSchema]" na rzecz samego "schemas"
     messages: dict[str, list[tuple[str, str]]] = {}
     for key in keys:
         msg = schemas[key].message
@@ -8,7 +9,7 @@ def define_message_handler(
             messages[msg] = []
         messages[msg].append((key, schemas[key].message_data))
 
-    # POPRAWKA: Rozróżnienie nazwy makra jeśli obsługujemy specyficzny typ komponentu z przyrostkiem typu
+    # Rozróżnienie nazwy makra z przyrostkiem typu komponentu
     macro_name = f"OPENTHERM_{component_type.upper()}_MESSAGE_HANDLERS"
     
     cg.add_define(
@@ -184,23 +185,13 @@ def create_only_conf(
 
 async def component_to_code(
     component_type: str,
-    schemas: dict[str, TSchema],
+    schemas,
     type: cg.MockObjClass,
     create: Create,
     config: dict[str, Any],
 ) -> list[str]:
-    """Generate the code for each configured component in the schema of a component type.
-
-    Parameters:
-    - component_type: The type of component, e.g. "sensor" or "binary_sensor"
-    - schema_: The schema for that component type, a list of available components
-    - type: The type of the component, e.g. sensor.Sensor or OpenthermOutput
-    - create: A constructor function for the component, which receives the config,
-      the key and the hub and should asynchronously return the new component
-    - config: The configuration for this component type
-
-    Returns: The list of keys for the created components
-    """
+    # Usunięto ": dict[str, TSchema]" na rzecz samego "schemas"
+    """Generate the code for each configured component in the schema of a component type."""
     cg.add_define(f"OPENTHERM_USE_{component_type.upper()}")
 
     hub = await cg.get_variable(config[const.CONF_OPENTHERM_ID])
@@ -217,6 +208,9 @@ async def component_to_code(
             cg.add(getattr(hub, f"set_{key}_{component_type.lower()}")(entity))
             keys.append(key)
 
+    define_has_component(component_type, keys)
+    define_message_handler(component_type, keys, schemas)
+    add_messages(hub, ke
     define_has_component(component_type, keys)
     define_message_handler(component_type, keys, schemas)
     add_messages(hub, keys, schemas)
